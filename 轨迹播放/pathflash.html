@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+		body, html{width: 100%;height: 100%;margin:0;font-family:"微软雅黑";}
+		#allmap {height:500px; width: 100%;}
+		#control{width:100%;}
+	</style>
+    <script type="text/javascript" src="http://apps.bdimg.com/libs/jquery/2.1.1/jquery.min.js"></script>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&amp;ak=89b8Vh7QRpZABrbNLr6qs0KgNDz2yux9"></script>
+	<script type="text/javascript" src="./snap.svg.js"></script>
+	<title>设置线、面可编辑</title>
+</head>
+<body>
+	<div id="allmap"></div>
+	<div id="control">
+		<!-- <button onclick = "polyline.enableEditing();polygon.enableEditing();">开启线、面编辑功能</button> -->
+		<!-- <button onclick = "polyline.disableEditing();polygon.disableEditing();">关闭线、面编辑功能</button> -->
+		<button onclick = "showFlash();">展示动画</button>
+	</div>
+</body>
+</html>
+<script type="text/javascript">
+	var functions = function(aa,bb){
+		$.each(bb,function(i,j){
+			//创建折线
+			var polyline = new BMap.Polyline(j, {strokeColor:"none", strokeWeight:3, strokeOpacity:0});
+			 //增加折线
+			map.addOverlay(polyline); 
+		})
+		//计算初始轨迹条数
+		// var pathLenght = $('path[stroke-linejoin]').length; 
+		//等待百度地图折线创建好后开始画轨迹
+		setTimeout(function(){
+			pathFlash($('path[stroke-linejoin]'),aa,10000);//.slice(pathLenght)
+		},500)
+	}
+	//清除画完的轨迹
+	var clearFlash = function(callback){
+    	try{
+    		cache = null;
+    		count = null;
+    		$.each(elementArr, function(i,n){
+    			n.stop();
+	    		n.removeData();
+	    		n.remove();
+	    		n = null;
+    		});
+    	}catch(e){}
+    }
+    //画历史轨迹的核心
+	var pathFlash = function($items,aa,ttim){
+		var elementArr = [];
+		if($items.size() < 1)return;
+    	$items.each(function(i,j){
+	    	var svg = Snap($(this).parents('svg')[0]),
+	    		pth = Snap(this),
+	    		pointsArr = $(this).attr('d').split(' '),
+	    		len = Snap.path.getTotalLength(pth.attr("d")),
+	    		flight = svg.paper.path().attr({
+		            fill: "none",
+		            stroke: "#ff0000",
+		            strokeWidth: 3
+		        }).insertAfter(pth),
+		        node = svg.paper.image('./up.png',pointsArr[1],pointsArr[2],46,22),
+		        node1 = svg.paper.text(pointsArr[1],pointsArr[2],aa[i]).attr({
+		            fill: "blue"
+		        });    
+	        elementArr.push(flight,node,node1);
+	    	Snap.animate(0, len, function (l) {
+	    		flight.attr({
+	                d: pth.getSubpath(0, l)
+	            });
+	            var dot = pth.getPointAtLength(l);
+	            node.attr({
+	            	x: dot.x,
+	            	y: dot.y
+	            });
+	            node1.attr({
+	            	x: dot.x,
+	            	y: dot.y
+	            });
+	        }, ttim, mina.linear(), function(callback){
+		    	try{
+		    		cache = null;
+		    		count = null;
+		    		$.each(elementArr, function(i,n){
+		    			n.stop();
+			    		n.removeData();
+			    		n.remove();
+			    		n = null;
+		    		});
+		    	}catch(e){}
+		    });
+    	});
+	}
+    //数据源
+	var data = [{"a":"第一辆","b":[
+		new BMap.Point(116.399, 39.910),
+		new BMap.Point(116.405, 39.920),
+		new BMap.Point(116.423493, 39.907445)
+		]},{"a":"第二辆","b":[
+			new BMap.Point(116.400, 39.912),
+			new BMap.Point(116.406, 39.922),
+			new BMap.Point(116.423494, 39.907447)
+		]}]
+	// 创建地图
+	var map = new BMap.Map("allmap");
+	map.centerAndZoom(new BMap.Point(116.404, 39.915), 15);
+	map.enableScrollWheelZoom();
+	//画轨迹启动
+	window.showFlash = function(){
+    	setTimeout(function(){
+	    	var sub = [],bot=[];
+	    	$.each(data,function(i,j){
+	    		sub.push(j.a);//车牌号的数组
+	    		bot.push(j.b);//车辆坐标的数组
+			})
+	    	functions(sub,bot);
+	    }, 10);
+    }	
+</script>
+
